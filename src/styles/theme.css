@@ -1,0 +1,64 @@
+:root {
+  /* Primary: Deep Navy Blue */
+  --primary: #1B2B4B;
+  --primary-light: #2D4270;
+  --primary-lighter: #3D5A9A;
+  --primary-dark: #111C30;
+  --primary-ghost: rgba(27, 43, 75, 0.08);
+
+  /* Secondary: Warm Teal/Slate */
+  --secondary: #2E7D72;
+  --secondary-light: #3D9E91;
+  --secondary-lighter: #4DBFB0;
+  --secondary-dark: #1F5A52;
+  --secondary-ghost: rgba(46, 125, 114, 0.08);
+
+  /* Neutrals */
+  --white: #FFFFFF;
+  --bg: #F4F6FB;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #1B2B4B;
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+
+  /* Text */
+  --text-primary: #1B2B4B;
+  --text-secondary: #4A5568;
+  --text-muted: #718096;
+  --text-light: #A0AEC0;
+  --text-white: #FFFFFF;
+
+  /* Status */
+  --success: #2E7D72;
+  --success-bg: #E6F4F1;
+  --warning: #D97706;
+  --warning-bg: #FEF3C7;
+  --danger: #C53030;
+  --danger-bg: #FED7D7;
+  --info: #2B6CB0;
+  --info-bg: #EBF8FF;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(27,43,75,0.08), 0 1px 2px rgba(27,43,75,0.04);
+  --shadow-md: 0 4px 12px rgba(27,43,75,0.10), 0 2px 6px rgba(27,43,75,0.06);
+  --shadow-lg: 0 10px 30px rgba(27,43,75,0.12), 0 4px 10px rgba(27,43,75,0.08);
+  --shadow-xl: 0 20px 50px rgba(27,43,75,0.15);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition: all 0.2s ease;
+  --transition-slow: all 0.3s ease;
+
+  /* Sidebar */
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 72px;
+
+  /* Navbar height */
+  --navbar-height: 68px;
+}
