@@ -9,6 +9,7 @@ import Modal from '../../components/common/Modal'
 import Table from '../../components/common/Table'
 import SearchBar from '../../components/common/SearchBar'
 import { studentService } from '../../services/studentService'
+import PendingBanner from '../../components/common/PendingBanner'
 import { ToastContext } from '../../context/ToastContext'
 import { formatDate, formatName } from '../../utils/formatters'
 
@@ -89,6 +90,7 @@ export default function ManageStudents() {
 
   return (
     <DashboardLayout>
+      <PendingBanner />
       <div className="page-header">
         <div>
           <h1 className="page-title">Manage Students</h1>

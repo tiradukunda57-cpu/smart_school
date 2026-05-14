@@ -17,9 +17,15 @@ export const validators = {
     if (val && val.length > max) return `Must be at most ${max} characters`
     return null
   },
+  // Only for registration forms — NOT login
   password: (val) => {
     if (!val) return 'Password is required'
     if (val.length < 6) return 'Password must be at least 6 characters'
+    return null
+  },
+  // For login forms — no length restriction
+  loginPassword: (val) => {
+    if (!val) return 'Password is required'
     return null
   },
   confirmPassword: (password) => (val) => {

@@ -8,6 +8,7 @@ import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Modal from '../../components/common/Modal'
 import Badge from '../../components/common/Badge'
+import PendingBanner from '../../components/common/PendingBanner'
 import Table from '../../components/common/Table'
 import SearchBar from '../../components/common/SearchBar'
 import Avatar from '../../components/common/Avatar'
@@ -38,40 +39,47 @@ export default function Attendance() {
 
   // Bulk form state
   const [bulkDate, setBulkDate] = useState(new Date().toISOString().split('T')[0])
-  const [bulkSubject, setBulkSubject] = useState('')
+  const [bulkCourse, setBulkCourse] = useState('')
   const [bulkStatuses, setBulkStatuses] = useState({})
   const [bulkStudents, setBulkStudents] = useState([])
 
   // Edit form state
   const [editForm, setEditForm] = useState({ status: '', note: '' })
 
-  const fetchRecords = async () => {
-    setLoading(true)
-    try {
-      const data = await attendanceService.getAll({
-        search, status: filterStatus, date: filterDate
-      })
-      setRecords(data.records || [])
-      setTotal(data.total || 0)
-    } catch {
+ const fetchRecords = async () => {
+  setLoading(true)
+  try {
+    const data = await attendanceService.getAll({
+      search, status: filterStatus, date: filterDate,
+    })
+    setRecords(data.records || [])
+    setTotal(data.total || 0)
+  } catch (err) {
+    if (err?.response?.status === 403) {
+      const msg = err?.response?.data?.message || 'Access denied'
+      addToast(msg, 'warning')
+    } else {
       addToast('Failed to load attendance records', 'error')
-    } finally {
-      setLoading(false)
     }
+  } finally {
+    setLoading(false)
   }
+}
 
-  const fetchStudents = async () => {
-    try {
-      const data = await studentService.getAll({ limit: 1000 })
-      setStudents(data.students || [])
-      const init = {}
-      data.students?.forEach(s => { init[s.id] = 'Present' })
-      setBulkStatuses(init)
-      setBulkStudents(data.students || [])
-    } catch {
+ const fetchStudents = async () => {
+  try {
+    const data = await studentService.getAll({ limit: 1000 })
+    setStudents(data.students || [])
+    const init = {}
+    data.students?.forEach(s => { init[s.id] = 'Present' })
+    setBulkStatuses(init)
+    setBulkStudents(data.students || [])
+  } catch (err) {
+    if (err?.response?.status !== 403) {
       addToast('Failed to load students', 'error')
     }
   }
+}
 
   useEffect(() => { fetchRecords() }, [search, filterStatus, filterDate])
   useEffect(() => { fetchStudents() }, [])
@@ -84,7 +92,7 @@ export default function Attendance() {
         student_id: parseInt(studentId),
         status,
         date: bulkDate,
-        subject: bulkSubject,
+        course: bulkCourse,
       }))
       await attendanceService.bulkCreate({ records: entries })
       addToast('Attendance recorded successfully!', 'success')
@@ -143,6 +151,7 @@ export default function Attendance() {
 
   return (
     <DashboardLayout>
+      <PendingBanner />
       <div className="page-header">
         <div>
           <h1 className="page-title">Attendance</h1>
@@ -239,7 +248,7 @@ export default function Attendance() {
               )
             },
             { key: 'date', label: 'Date', render: v => formatDate(v) },
-            { key: 'subject', label: 'Subject', render: v => v || '—' },
+            { key: 'course', label: 'Course', render: v => v || '—' },
             {
               key: 'status', label: 'Status',
               render: v => <Badge type={v?.toLowerCase()} label={v} />
@@ -296,9 +305,9 @@ export default function Attendance() {
               onChange={e => setBulkDate(e.target.value)} />
           </div>
           <div className="form-group" style={{ margin: 0 }}>
-            <label className="form-label">Subject (optional)</label>
-            <input type="text" className="form-input" value={bulkSubject}
-              onChange={e => setBulkSubject(e.target.value)} placeholder="e.g. Mathematics" />
+            <label className="form-label">Course (optional)</label>
+            <input type="text" className="form-input" value={bulkCourse}
+              onChange={e => setBulkCourse(e.target.value)} placeholder="e.g. Mathematics" />
           </div>
         </div>
 

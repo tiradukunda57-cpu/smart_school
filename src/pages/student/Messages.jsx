@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react'
-import { FiSend, FiMessageSquare, FiArrowLeft, FiPlus } from 'react-icons/fi'
+import { FiSend, FiMessageSquare, FiArrowLeft, FiPlus, FiSmile, FiPaperclip } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import Avatar from '../../components/common/Avatar'
@@ -25,6 +25,8 @@ export default function StudentMessages() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [search, setSearch] = useState('')
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  const [typingStatus, setTypingStatus] = useState(false)
 
   // New conversation
   const [newConvModal, setNewConvModal] = useState(false)
@@ -33,6 +35,9 @@ export default function StudentMessages() {
   const [initMessage, setInitMessage] = useState('')
 
   const bottomRef = useRef()
+  const typingTimeoutRef = useRef(null)
+  const typingSentRef = useRef(false)
+  const EMOJIS = ['😀', '😂', '😊', '👍', '🎉', '❤️', '🔥', '📎', '📘', '📝']
 
   const fetchConversations = async () => {
     try {
@@ -57,6 +62,71 @@ export default function StudentMessages() {
     }
   }
 
+  const renderMessageContent = (content) => {
+    const urlPattern = /(https?:\/\/[^\s]+)/g
+    return content.split(urlPattern).map((part, index) => (
+      /^https?:\/\/[^\s]+$/.test(part)
+        ? <a key={index} href={part} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>{part}</a>
+        : part
+    ))
+  }
+
+  const sendTypingActivity = async (isTyping) => {
+    if (!activeConv) return
+    if (typingSentRef.current === isTyping) return
+    typingSentRef.current = isTyping
+    try {
+      await messageService.sendTyping({ receiver_id: activeConv.other_user_id, is_typing: isTyping })
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleTypingChange = async (value) => {
+    setNewMessage(value)
+    if (!activeConv) return
+    await sendTypingActivity(true)
+    clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingActivity(false)
+    }, 1200)
+  }
+
+  const loadTypingStatus = async () => {
+    if (!activeConv) return
+    try {
+      const data = await messageService.getTypingStatus(activeConv.other_user_id)
+      setTypingStatus(Boolean(data?.is_typing))
+    } catch {
+      setTypingStatus(false)
+    }
+  }
+
+  const addEmoji = (emoji) => {
+    setNewMessage(prev => `${prev}${emoji}`)
+    setEmojiOpen(false)
+  }
+
+  const handleAttachResource = async () => {
+    const url = window.prompt('Share a resource URL with your teacher:')
+    if (!url?.trim() || !activeConv) return
+    setSending(true)
+    try {
+      await messageService.send({
+        receiver_id: activeConv.other_user_id,
+        content: `Resource: ${url.trim()}`,
+      })
+      setNewMessage('')
+      fetchMessages(activeConv.other_user_id)
+      fetchConversations()
+      addToast('Resource shared successfully', 'success')
+    } catch {
+      addToast('Failed to share resource', 'error')
+    } finally {
+      setSending(false)
+    }
+  }
+
   const fetchTeachers = async () => {
     try {
       const data = await teacherService.getAll({ limit: 100 })
@@ -72,11 +142,15 @@ export default function StudentMessages() {
   useEffect(() => {
     if (!activeConv) return
     fetchMessages(activeConv.other_user_id)
-    const interval = setInterval(
-      () => fetchMessages(activeConv.other_user_id),
-      8000
-    )
-    return () => clearInterval(interval)
+    loadTypingStatus()
+    const refreshInterval = setInterval(() => {
+      fetchMessages(activeConv.other_user_id)
+      loadTypingStatus()
+    }, 8000)
+    return () => {
+      clearInterval(refreshInterval)
+      sendTypingActivity(false)
+    }
   }, [activeConv])
 
   const handleSend = async () => {
@@ -94,6 +168,7 @@ export default function StudentMessages() {
       addToast('Failed to send message', 'error')
     } finally {
       setSending(false)
+      sendTypingActivity(false)
     }
   }
 
@@ -126,6 +201,7 @@ export default function StudentMessages() {
   }
 
   const handleBackToList = () => {
+    sendTypingActivity(false)
     setActiveConv(null)
   }
 
@@ -316,6 +392,11 @@ export default function StudentMessages() {
                   <p style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>
                     Teacher
                   </p>
+                  {typingStatus && (
+                    <p style={{ fontSize: '0.68rem', color: 'var(--success)', marginTop: '0.15rem' }}>
+                      Teacher is typing...
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -371,7 +452,7 @@ export default function StudentMessages() {
                           lineHeight: 1.55,
                           wordBreak: 'break-word',
                         }}>
-                          {msg.content}
+                          {renderMessageContent(msg.content)}
                         </div>
                         <p style={{
                           fontSize: '0.65rem', color: 'var(--text-light)',
@@ -396,20 +477,75 @@ export default function StudentMessages() {
                 flexShrink: 0,
                 alignItems: 'flex-end',
               }}>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSend()
-                    }
+                <button
+                  onClick={() => setEmojiOpen(prev => !prev)}
+                  type="button"
+                  style={{
+                    width: 42, height: 42,
+                    borderRadius: '12px', border: '1px solid var(--border)',
+                    background: 'var(--bg)', color: 'var(--text-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', flexShrink: 0,
                   }}
-                  placeholder="Type your message..."
-                  className="form-input"
-                  style={{ flex: 1, minHeight: 42 }}
-                />
+                >
+                  <FiSmile size={18} />
+                </button>
+                <button
+                  onClick={handleAttachResource}
+                  type="button"
+                  style={{
+                    width: 42, height: 42,
+                    borderRadius: '12px', border: '1px solid var(--border)',
+                    background: 'var(--bg)', color: 'var(--text-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', flexShrink: 0,
+                  }}
+                  title="Share resource"
+                >
+                  <FiPaperclip size={18} />
+                </button>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={e => handleTypingChange(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder="Type your message..."
+                    className="form-input"
+                    style={{ width: '100%', minHeight: 42 }}
+                  />
+                  {emojiOpen && (
+                    <div style={{
+                      position: 'absolute', bottom: 'calc(100% + 0.5rem)', left: 0,
+                      display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem',
+                      padding: '0.75rem', background: 'white', border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
+                      zIndex: 10,
+                      width: '100%',
+                    }}>
+                      {EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => addEmoji(emoji)}
+                          style={{
+                            width: 34, height: 34,
+                            borderRadius: 8, border: '1px solid var(--border)',
+                            background: 'var(--bg)', cursor: 'pointer',
+                            fontSize: '1rem',
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleSend}
                   disabled={!newMessage.trim() || sending}

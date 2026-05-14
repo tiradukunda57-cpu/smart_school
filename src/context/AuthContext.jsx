@@ -12,7 +12,14 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('school_token')
     if (stored && token) {
       try {
-        setUser(JSON.parse(stored))
+        const parsed = JSON.parse(stored)
+        // Ensure role exists
+        if (parsed && parsed.role) {
+          setUser(parsed)
+        } else {
+          localStorage.removeItem('school_user')
+          localStorage.removeItem('school_token')
+        }
       } catch {
         localStorage.removeItem('school_user')
         localStorage.removeItem('school_token')
@@ -23,10 +30,17 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials, role) => {
     const data = await authService.login(credentials, role)
+
+    // Ensure user object always has role
+    const userData = {
+      ...data.user,
+      role: data.user.role || role,
+    }
+
     localStorage.setItem('school_token', data.token)
-    localStorage.setItem('school_user', JSON.stringify(data.user))
-    setUser(data.user)
-    return data.user
+    localStorage.setItem('school_user', JSON.stringify(userData))
+    setUser(userData)
+    return userData
   }, [])
 
   const logout = useCallback(() => {

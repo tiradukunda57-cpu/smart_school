@@ -2,164 +2,278 @@ import React, { useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   FiHome, FiUsers, FiCheckSquare, FiBookOpen,
-  FiFileText, FiMessageSquare, FiUser, FiChevronRight, FiX
+  FiFileText, FiMessageSquare, FiUser, FiChevronRight,
+  FiX, FiShield, FiUserCheck, FiLayers, FiClipboard,
+  FiActivity, FiDatabase
 } from 'react-icons/fi'
 import { useAuth } from '../../hooks/useAuth'
 
+const adminLinks = [
+  { section: 'Overview' },
+  { to: '/admin/dashboard',  icon: FiHome,         label: 'Dashboard' },
+  { to: '/admin/users',      icon: FiUsers,        label: 'All Users' },
+  { section: 'Management' },
+  { to: '/admin/teachers',   icon: FiUserCheck,    label: 'Teacher Approvals' },
+  { to: '/admin/groups',     icon: FiLayers,       label: 'Groups' },
+  { to: '/admin/recovery',   icon: FiShield,       label: 'Recovery Requests' },
+  { section: 'Analytics' },
+  { to: '/admin/activity',   icon: FiActivity,     label: 'Activity Logs' },
+  { to: '/admin/reports',    icon: FiDatabase,     label: 'Reports' },
+  { section: 'Communication' },
+  { to: '/groups',           icon: FiMessageSquare, label: 'Group Chats' },
+]
+
 const teacherLinks = [
-  { to: '/teacher/dashboard', icon: FiHome, label: 'Dashboard' },
-  { to: '/teacher/students', icon: FiUsers, label: 'Students' },
-  { to: '/teacher/attendance', icon: FiCheckSquare, label: 'Attendance' },
-  { to: '/teacher/assignments', icon: FiBookOpen, label: 'Assignments' },
-  { to: '/teacher/notes', icon: FiFileText, label: 'Notes' },
-  { to: '/teacher/messages', icon: FiMessageSquare, label: 'Messages' },
-  { to: '/teacher/profile', icon: FiUser, label: 'My Profile' },
+  { section: 'Main' },
+  { to: '/teacher/dashboard',   icon: FiHome,         label: 'Dashboard' },
+  { to: '/teacher/students',    icon: FiUsers,        label: 'Students' },
+  { section: 'Academic' },
+  { to: '/teacher/attendance',  icon: FiCheckSquare,  label: 'Attendance' },
+  { to: '/teacher/assignments', icon: FiBookOpen,     label: 'Assignments' },
+  { to: '/teacher/quizzes',     icon: FiClipboard,    label: 'Quizzes' },
+  { to: '/teacher/notes',       icon: FiFileText,     label: 'Notes' },
+  { section: 'Communication' },
+  { to: '/teacher/messages',    icon: FiMessageSquare, label: 'Messages' },
+  { to: '/groups',              icon: FiLayers,       label: 'Groups' },
+  { section: 'Account' },
+  { to: '/teacher/profile',     icon: FiUser,         label: 'My Profile' },
 ]
 
 const studentLinks = [
-  { to: '/student/dashboard', icon: FiHome, label: 'Dashboard' },
-  { to: '/student/attendance', icon: FiCheckSquare, label: 'My Attendance' },
-  { to: '/student/assignments', icon: FiBookOpen, label: 'Assignments' },
-  { to: '/student/notes', icon: FiFileText, label: 'Notes' },
-  { to: '/student/teachers', icon: FiUsers, label: 'Teachers' },
-  { to: '/student/messages', icon: FiMessageSquare, label: 'Messages' },
+  { section: 'Main' },
+  { to: '/student/dashboard',   icon: FiHome,         label: 'Dashboard' },
+  { section: 'Academic' },
+  { to: '/student/attendance',  icon: FiCheckSquare,  label: 'My Attendance' },
+  { to: '/student/assignments', icon: FiBookOpen,     label: 'Assignments' },
+  { to: '/student/quizzes',     icon: FiClipboard,    label: 'Quizzes' },
+  { to: '/student/notes',       icon: FiFileText,     label: 'Notes' },
+  { section: 'Communication' },
+  { to: '/student/teachers',    icon: FiUsers,        label: 'Teachers' },
+  { to: '/student/messages',    icon: FiMessageSquare, label: 'Messages' },
+  { to: '/groups',              icon: FiLayers,       label: 'Groups' },
 ]
 
-export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }) {
+export default function Sidebar({ collapsed, isMobile, mobileOpen, onCloseMobile }) {
   const { user } = useAuth()
-  const links = user?.role === 'teacher' ? teacherLinks : studentLinks
   const location = useLocation()
 
-  // Close mobile sidebar on route change
+  const links = user?.role === 'admin'
+    ? adminLinks
+    : user?.role === 'teacher'
+      ? teacherLinks
+      : studentLinks
+
+  const isAdmin = user?.role === 'admin'
+
+  // Close mobile sidebar on navigation
   useEffect(() => {
     if (mobileOpen && onCloseMobile) onCloseMobile()
   }, [location.pathname])
 
   // Lock body scroll when mobile sidebar is open
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = mobileOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [mobileOpen])
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 992
+  // Determine what to show
+  const showLabels = isMobile ? true : !collapsed
 
-  // Desktop sidebar
-  const sidebarStyle = {
-    position: 'fixed',
-    top: 'var(--navbar-height)',
-    left: 0,
-    bottom: 0,
-    width: collapsed ? 'var(--sidebar-collapsed)' : '260px',
-    background: 'var(--primary)',
-    transition: 'all 0.3s ease',
-    overflowX: 'hidden',
-    overflowY: 'auto',
-    zIndex: 99,
-    display: 'flex',
-    flexDirection: 'column',
-  }
+  // Colors
+  const sidebarBg = isAdmin
+    ? 'linear-gradient(180deg, #062b18 0%, #0b4029 50%, #0f472f 100%)'
+    : 'linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%)'
 
-  // Mobile: completely different behavior
-  if (isMobile || mobileOpen !== undefined) {
-    if (!mobileOpen) {
-      // Hidden on mobile
-      sidebarStyle.transform = 'translateX(-100%)'
-      sidebarStyle.width = '280px'
-      sidebarStyle.top = 0
-      sidebarStyle.zIndex = 1001
-    } else {
-      // Visible on mobile
-      sidebarStyle.transform = 'translateX(0)'
-      sidebarStyle.width = '280px'
-      sidebarStyle.top = 0
-      sidebarStyle.zIndex = 1001
+  const accentColor = isAdmin ? '#10b981'
+    : user?.role === 'teacher' ? 'var(--secondary-lighter)'
+    : 'rgba(255,255,255,0.6)'
+
+  const activeItemBg = isAdmin
+    ? 'rgba(16,185,129,0.18)'
+    : 'rgba(255,255,255,0.12)'
+
+  const activeBorderColor = isAdmin ? '#10b981' : 'var(--secondary-lighter)'
+
+  // Build styles
+  const desktopWidth = showLabels ? 272 : 72
+  let sidebarStyle = {}
+
+  if (isMobile) {
+    sidebarStyle = {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      width: 285,
+      background: sidebarBg,
+      zIndex: 1001,
+      display: 'flex',
+      flexDirection: 'column',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: mobileOpen ? '6px 0 24px rgba(0,0,0,0.35)' : 'none',
+    }
+  } else {
+    sidebarStyle = {
+      position: 'fixed',
+      top: 'var(--navbar-height)',
+      left: 0,
+      bottom: 0,
+      width: desktopWidth,
+      background: sidebarBg,
+      zIndex: 99,
+      display: 'flex',
+      flexDirection: 'column',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: isAdmin ? '3px 0 16px rgba(0,0,0,0.15)' : '1px 0 4px rgba(0,0,0,0.08)',
     }
   }
 
   return (
     <>
       {/* Mobile backdrop */}
-      {mobileOpen && (
+      {isMobile && mobileOpen && (
         <div
           onClick={onCloseMobile}
           style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(17,28,48,0.6)',
-            backdropFilter: 'blur(4px)',
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(3px)',
             zIndex: 1000,
-            animation: 'fadeIn 0.2s ease',
+            animation: 'sidebarFadeIn 0.25s ease',
           }}
         />
       )}
 
       <aside style={sidebarStyle}>
-        {/* Mobile close button */}
-        {mobileOpen && (
+        {/* ── Mobile Header ────────────────────── */}
+        {isMobile && (
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
+            display: 'flex', alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '1rem 1.25rem',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            padding: '1.1rem 1.15rem',
+            borderBottom: '1px solid rgba(255,255,255,0.07)',
+            flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <div style={{
-                width: 32, height: 32, background: 'rgba(255,255,255,0.15)',
+                width: 34, height: 34,
+                background: isAdmin
+                  ? 'linear-gradient(135deg,#10b981,#059669)'
+                  : 'rgba(255,255,255,0.12)',
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: isAdmin ? '0 2px 8px rgba(16,185,129,0.35)' : 'none',
               }}>
-                <span style={{ color: 'white', fontWeight: 800, fontSize: '1rem' }}>E</span>
+                {isAdmin
+                  ? <FiShield size={15} color="white" />
+                  : <span style={{ color: 'white', fontWeight: 800, fontSize: '0.95rem' }}>E</span>
+                }
               </div>
               <span style={{
-                fontWeight: 800, fontSize: '1rem', color: 'white', letterSpacing: '-0.02em'
+                fontWeight: 800, fontSize: '1rem', color: 'white',
+                letterSpacing: '-0.02em',
               }}>
-                EduManage
+                {isAdmin ? 'Admin Panel' : 'EduManage'}
               </span>
             </div>
             <button
               onClick={onCloseMobile}
               style={{
-                background: 'rgba(255,255,255,0.1)', border: 'none',
+                background: 'rgba(255,255,255,0.08)',
+                border: 'none',
                 borderRadius: 'var(--radius-sm)',
                 padding: '0.4rem', cursor: 'pointer',
-                color: 'white', display: 'flex', alignItems: 'center',
+                color: 'rgba(255,255,255,0.7)',
+                display: 'flex', alignItems: 'center',
+                minWidth: 34, minHeight: 34,
+                justifyContent: 'center',
+                transition: 'background 0.2s ease',
               }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
             >
               <FiX size={18} />
             </button>
           </div>
         )}
 
-        {/* Role label */}
-        {(!collapsed || mobileOpen) && (
-          <div style={{
-            padding: '1.25rem 1.25rem 0.5rem',
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            color: 'rgba(255,255,255,0.4)',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-          }}>
-            {user?.role === 'teacher' ? 'Teacher Panel' : 'Student Panel'}
+        {/* ── Role Badge ───────────────────────── */}
+        {showLabels && (
+          <div style={{ padding: '1.1rem 1rem 0.6rem', flexShrink: 0 }}>
+            {isAdmin ? (
+              <div style={{
+                background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.25)',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.65rem 0.85rem',
+                display: 'flex', alignItems: 'center', gap: '0.6rem',
+              }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: 'linear-gradient(135deg,#10b981,#059669)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <FiShield size={13} color="white" />
+                </div>
+                <div>
+                  <p style={{
+                    fontSize: '0.68rem', fontWeight: 800,
+                    color: '#10b981',
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                  }}>
+                    ADMINISTRATOR
+                  </p>
+                  <p style={{
+                    fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)',
+                  }}>
+                    Full System Access
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p style={{
+                fontSize: '0.65rem', fontWeight: 700,
+                color: accentColor, letterSpacing: '0.1em',
+                textTransform: 'uppercase', paddingLeft: '0.25rem',
+              }}>
+                {user?.role === 'teacher' ? 'Teacher Panel' : 'Student Panel'}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Nav links */}
+        {/* ── Navigation ───────────────────────── */}
         <nav style={{
-          flex: 1,
-          padding: '0.5rem 0.75rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.15rem',
+          flex: 1, padding: '0.35rem 0.65rem',
+          display: 'flex', flexDirection: 'column',
+          gap: '1px',
         }}>
-          {links.map(({ to, icon: Icon, label }) => {
-            const isActive = location.pathname === to
-            const showLabel = !collapsed || mobileOpen
+          {links.map((item, idx) => {
+            if (item.section) {
+              if (!showLabels) return null
+              return (
+                <div key={`sec-${idx}`} style={{
+                  padding: '0.85rem 0.85rem 0.3rem',
+                  fontSize: '0.6rem', fontWeight: 700,
+                  color: isAdmin ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.25)',
+                  letterSpacing: '0.12em', textTransform: 'uppercase',
+                }}>
+                  {item.section}
+                </div>
+              )
+            }
+
+            const { to, icon: Icon, label } = item
+            const isActive = location.pathname === to ||
+              (to.length > 1 && location.pathname.startsWith(to + '/'))
+
             return (
               <NavLink
                 key={to}
@@ -167,60 +281,73 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: showLabel ? '0.85rem' : 0,
-                  padding: showLabel ? '0.75rem 1rem' : '0.8rem',
+                  gap: showLabels ? '0.75rem' : 0,
+                  padding: showLabels ? '0.6rem 0.9rem' : '0.7rem',
                   borderRadius: 'var(--radius-md)',
-                  color: isActive ? 'var(--white)' : 'rgba(255,255,255,0.65)',
-                  background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: isActive ? 'white' : 'rgba(255,255,255,0.5)',
+                  background: isActive ? activeItemBg : 'transparent',
                   fontWeight: isActive ? 700 : 500,
-                  fontSize: '0.875rem',
-                  transition: 'var(--transition)',
-                  justifyContent: showLabel ? 'flex-start' : 'center',
+                  fontSize: '0.83rem',
+                  transition: 'all 0.18s ease',
+                  justifyContent: showLabels ? 'flex-start' : 'center',
                   position: 'relative',
                   textDecoration: 'none',
-                  minHeight: 44, // touch target
+                  minHeight: 40,
                 }}
                 onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.8)'
+                  }
                 }}
                 onMouseLeave={e => {
-                  if (!isActive) e.currentTarget.style.background = 'transparent'
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.5)'
+                  }
                 }}
-                title={!showLabel ? label : ''}
+                title={!showLabels ? label : undefined}
               >
                 {isActive && (
                   <span style={{
-                    position: 'absolute', left: 0, top: '20%', bottom: '20%',
-                    width: 3, background: 'var(--secondary-lighter)',
-                    borderRadius: '0 3px 3px 0',
+                    position: 'absolute',
+                    left: 0, top: '16%', bottom: '16%',
+                    width: 3,
+                    background: activeBorderColor,
+                    borderRadius: '0 4px 4px 0',
                   }} />
                 )}
-                <Icon size={18} style={{ flexShrink: 0 }} />
-                {showLabel && <span style={{ flex: 1 }}>{label}</span>}
-                {showLabel && isActive && <FiChevronRight size={14} style={{ opacity: 0.6 }} />}
+                <Icon size={17} style={{ flexShrink: 0 }} />
+                {showLabels && (
+                  <span style={{ flex: 1, whiteSpace: 'nowrap' }}>{label}</span>
+                )}
+                {showLabels && isActive && (
+                  <FiChevronRight size={13} style={{ opacity: 0.45, flexShrink: 0 }} />
+                )}
               </NavLink>
             )
           })}
         </nav>
 
-        {/* Footer */}
-        {(!collapsed || mobileOpen) && (
+        {/* ── Footer ───────────────────────────── */}
+        {showLabels && (
           <div style={{
-            padding: '1rem',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            fontSize: '0.72rem',
-            color: 'rgba(255,255,255,0.3)',
+            padding: '0.8rem 1rem',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            fontSize: '0.65rem',
+            color: 'rgba(255,255,255,0.18)',
             textAlign: 'center',
+            flexShrink: 0,
           }}>
-            EduManage © 2024
+            {isAdmin ? '🛡️ EduManage Admin v2.0' : 'EduManage © 2024'}
           </div>
         )}
       </aside>
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @media (max-width: 992px) {
-          aside { transform: translateX(-100%); top: 0 !important; }
+        @keyframes sidebarFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </>

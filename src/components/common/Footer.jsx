@@ -15,7 +15,7 @@ export default function Footer() {
         flexWrap: 'wrap',
         gap: '0.5rem',
       }}>
-        <span>© 2024 EduManage</span>
+        <span>© 2026 EduManage</span>
         <span className="footer-tagline">Built with ❤️ for Education</span>
       </footer>
       <style>{`

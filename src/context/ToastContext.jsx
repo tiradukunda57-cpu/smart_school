@@ -7,7 +7,7 @@ export function ToastProvider({ children }) {
 
   const addToast = useCallback((message, type = 'info', duration = 3500) => {
     const id = Date.now() + Math.random()
-    setToasts(prev => [...prev, { id, message, type }])
+    setToasts([{ id, message, type }]) // Only keep one toast
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id))
     }, duration)

@@ -10,10 +10,10 @@ const icons = {
 }
 
 const colors = {
-  success: { bg: 'var(--success-bg)', border: 'var(--success)', color: 'var(--success)' },
-  error: { bg: 'var(--danger-bg)', border: 'var(--danger)', color: 'var(--danger)' },
-  warning: { bg: 'var(--warning-bg)', border: 'var(--warning)', color: 'var(--warning)' },
-  info: { bg: 'var(--info-bg)', border: 'var(--info)', color: 'var(--info)' },
+  success: { bg: 'linear-gradient(135deg, #10b981, #059669)', border: '#047857', color: '#ffffff', iconBg: '#065f46' },
+  error: { bg: 'linear-gradient(135deg, #ef4444, #dc2626)', border: '#b91c1c', color: '#ffffff', iconBg: '#991b1b' },
+  warning: { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', border: '#b45309', color: '#ffffff', iconBg: '#92400e' },
+  info: { bg: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: '#1d4ed8', color: '#ffffff', iconBg: '#1e40af' },
 }
 
 export default function Toast() {
@@ -27,30 +27,45 @@ export default function Toast() {
           return (
             <div key={toast.id} className="toast-item" style={{
               background: c.bg,
-              border: `1.5px solid ${c.border}`,
-              borderRadius: 'var(--radius-md)',
-              padding: '0.85rem 1rem',
+              border: `2px solid ${c.border}`,
+              borderRadius: '12px',
+              padding: '1rem 1.2rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.65rem',
-              boxShadow: 'var(--shadow-md)',
-              animation: 'toastSlideIn 0.3s ease',
+              gap: '0.8rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+              animation: 'toastSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              backdropFilter: 'blur(10px)',
             }}>
-              <span style={{ color: c.color, flexShrink: 0 }}>{icons[toast.type]}</span>
+              <div style={{
+                background: c.iconBg,
+                borderRadius: '50%',
+                padding: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {icons[toast.type]}
+              </div>
               <span style={{
-                flex: 1, fontSize: '0.85rem', color: 'var(--text-primary)',
-                fontWeight: 500, lineHeight: 1.4,
+                flex: 1, fontSize: '0.9rem', color: c.color,
+                fontWeight: 600, lineHeight: 1.4,
               }}>
                 {toast.message}
               </span>
               <button
                 onClick={() => removeToast(toast.id)}
                 style={{
-                  background: 'none', color: c.color, padding: '2px',
-                  display: 'flex', border: 'none', cursor: 'pointer',
-                  flexShrink: 0, minWidth: 24, minHeight: 24,
+                  background: 'rgba(255,255,255,0.2)', color: c.color, padding: '4px',
+                  border: 'none', borderRadius: '6px', cursor: 'pointer',
+                  flexShrink: 0, minWidth: 28, minHeight: 28,
                   alignItems: 'center', justifyContent: 'center',
+                  display: 'flex',
+                  transition: 'background 0.2s',
                 }}
+                onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
               >
                 <FiX size={16} />
               </button>
@@ -71,8 +86,8 @@ export default function Toast() {
           width: calc(100% - 2rem);
         }
         @keyframes toastSlideIn {
-          from { transform: translateX(100%); opacity: 0 }
-          to { transform: translateX(0); opacity: 1 }
+          from { transform: translateX(120%) scale(0.8); opacity: 0 }
+          to { transform: translateX(0) scale(1); opacity: 1 }
         }
         @media (max-width: 480px) {
           .toast-container {
@@ -84,8 +99,8 @@ export default function Toast() {
             width: auto;
           }
           @keyframes toastSlideIn {
-            from { transform: translateY(100%); opacity: 0 }
-            to { transform: translateY(0); opacity: 1 }
+            from { transform: translateY(120%) scale(0.8); opacity: 0 }
+            to { transform: translateY(0) scale(1); opacity: 1 }
           }
         }
       `}</style>

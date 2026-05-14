@@ -1,6 +1,9 @@
 import React, { useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiUser, FiMail, FiLock, FiPhone, FiBook, FiEye, FiEyeOff, FiAward } from 'react-icons/fi'
+import {
+  FiUser, FiMail, FiLock, FiPhone,
+  FiBook, FiEye, FiEyeOff, FiAward
+} from 'react-icons/fi'
 import { useApi } from '../../hooks/useApi'
 import { ToastContext } from '../../context/ToastContext'
 import { validate, validators } from '../../utils/validators'
@@ -11,10 +14,12 @@ import {
 } from './StudentLogin'
 import { PasswordStrength } from './StudentRegister'
 
-const subjects = [
-  'Mathematics', 'English', 'Science', 'History', 'Geography',
-  'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Arts',
-  'Music', 'Physical Education', 'Economics', 'Other'
+const courses = [
+  'Mathematics', 'English Language', 'Science',
+  'History', 'Geography', 'Physics', 'Chemistry',
+  'Biology', 'Computer Science', 'Arts & Design',
+  'Music', 'Physical Education', 'Economics',
+  'Accounting', 'Literature', 'French', 'Other',
 ]
 
 const STEPS = ['Personal Info', 'Professional', 'Security']
@@ -29,9 +34,15 @@ export default function TeacherRegister() {
   const [showPass, setShowPass] = useState(false)
 
   const [form, setForm] = useState({
-    first_name: '', last_name: '', email: '',
-    password: '', confirm_password: '',
-    phone: '', subject: '', qualification: '', bio: ''
+    first_name:       '',
+    last_name:        '',
+    email:            '',
+    password:         '',
+    confirm_password: '',
+    phone:            '',
+    course:           '',   // ← matches DB column exactly
+    qualification:    '',
+    bio:              '',
   })
   const [errors, setErrors] = useState({})
 
@@ -42,22 +53,24 @@ export default function TeacherRegister() {
 
   const validateStep = (step) => {
     let rules = {}
+
     if (step === 0) {
       rules = {
         first_name: [validators.required, validators.minLength(2)],
-        last_name: [validators.required, validators.minLength(2)],
-        email: [validators.required, validators.email],
+        last_name:  [validators.required, validators.minLength(2)],
+        email:      [validators.required, validators.email],
       }
     } else if (step === 1) {
       rules = {
-        subject: [validators.required],
+        course: [validators.required],
       }
     } else if (step === 2) {
       rules = {
-        password: [validators.password],
+        password:         [validators.password],
         confirm_password: [validators.confirmPassword(form.password)],
       }
     }
+
     const errs = validate(form, rules)
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -78,9 +91,25 @@ export default function TeacherRegister() {
     e.preventDefault()
     if (!validateStep(2)) return
 
-    await execute(() => authService.registerTeacher(form), {
+    // Build payload — only fields the backend expects
+    const payload = {
+      first_name:    form.first_name.trim(),
+      last_name:     form.last_name.trim(),
+      email:         form.email.trim().toLowerCase(),
+      password:      form.password,
+      phone:         form.phone.trim() || undefined,
+      course:        form.course.trim(),        // ← correct field name
+      qualification: form.qualification.trim() || undefined,
+      bio:           form.bio.trim() || undefined,
+    }
+
+    await execute(() => authService.registerTeacher(payload), {
       onSuccess: () => {
-        addToast('Teacher account created! Please log in. 🎉', 'success')
+        addToast(
+          'Teacher account created! Awaiting admin approval before you can access features. 🎓',
+          'success',
+          5000
+        )
         navigate('/teacher/login')
       },
       onError: (msg) => addToast(msg, 'error'),
@@ -93,82 +122,125 @@ export default function TeacherRegister() {
 
       <form onSubmit={handleSubmit}>
 
-        {/* Step 1: Personal Info */}
+        {/* ── Step 0: Personal Info ── */}
         {currentStep === 0 && (
           <StepContainer direction={direction} key="step0">
             <AuthInput
-              label="First Name" name="first_name" value={form.first_name}
-              onChange={handleChange} icon={FiUser} error={errors.first_name}
+              label="First Name *"
+              name="first_name"
+              value={form.first_name}
+              onChange={handleChange}
+              icon={FiUser}
+              error={errors.first_name}
               placeholder="Jane"
             />
             <AuthInput
-              label="Last Name" name="last_name" value={form.last_name}
-              onChange={handleChange} icon={FiUser} error={errors.last_name}
+              label="Last Name *"
+              name="last_name"
+              value={form.last_name}
+              onChange={handleChange}
+              icon={FiUser}
+              error={errors.last_name}
               placeholder="Smith"
             />
             <AuthInput
-              label="Email Address" name="email" type="email" value={form.email}
-              onChange={handleChange} icon={FiMail} error={errors.email}
+              label="Email Address *"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              icon={FiMail}
+              error={errors.email}
               placeholder="teacher@school.com"
             />
           </StepContainer>
         )}
 
-        {/* Step 2: Professional */}
+        {/* ── Step 1: Professional ── */}
         {currentStep === 1 && (
           <StepContainer direction={direction} key="step1">
+
+            {/* Course select — matches DB column "course" */}
             <div className="form-group">
-              <label className="form-label">Main Subject *</label>
+              <label className="form-label">Course (Subject) *</label>
               <select
-                name="subject" value={form.subject} onChange={handleChange}
-                className={`form-select ${errors.subject ? 'error' : ''}`}
+                name="course"
+                value={form.course}
+                onChange={handleChange}
+                className={`form-select ${errors.course ? 'error' : ''}`}
               >
-                <option value="">Select your subject</option>
-                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="">Select your course</option>
+                {courses.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
-              {errors.subject && <span className="form-error">{errors.subject}</span>}
+              {errors.course && (
+                <span className="form-error">{errors.course}</span>
+              )}
+              <p style={{
+                fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem',
+              }}>
+                ⚠️ Each course can only have one teacher. Choose carefully.
+              </p>
             </div>
+
             <AuthInput
-              label="Qualification (optional)" name="qualification"
+              label="Qualification (optional)"
+              name="qualification"
               value={form.qualification}
-              onChange={handleChange} icon={FiAward}
-              placeholder="e.g. M.Ed., B.Sc."
+              onChange={handleChange}
+              icon={FiAward}
+              placeholder="e.g. M.Ed., B.Sc., PhD"
             />
+
             <AuthInput
-              label="Phone (optional)" name="phone"
+              label="Phone (optional)"
+              name="phone"
               value={form.phone}
-              onChange={handleChange} icon={FiPhone}
-              placeholder="+250 7XX XXX XXX"
+              onChange={handleChange}
+              icon={FiPhone}
+              placeholder="+1 234 567 8900"
             />
+
             <div className="form-group">
               <label className="form-label">Bio (optional)</label>
               <textarea
-                name="bio" value={form.bio} onChange={handleChange}
+                name="bio"
+                value={form.bio}
+                onChange={handleChange}
                 className="form-textarea"
-                placeholder="Tell students about yourself..."
-                rows={3} style={{ minHeight: 75 }}
+                placeholder="Tell students about yourself and your teaching style..."
+                rows={3}
+                style={{ minHeight: 80 }}
               />
             </div>
           </StepContainer>
         )}
 
-        {/* Step 3: Security */}
+        {/* ── Step 2: Security ── */}
         {currentStep === 2 && (
           <StepContainer direction={direction} key="step2">
             <AuthInput
-              label="Password" name="password"
+              label="Password *"
+              name="password"
               type={showPass ? 'text' : 'password'}
-              value={form.password} onChange={handleChange}
-              icon={FiLock} error={errors.password}
+              value={form.password}
+              onChange={handleChange}
+              icon={FiLock}
+              error={errors.password}
               placeholder="Min. 6 characters"
               rightIcon={showPass ? FiEyeOff : FiEye}
               onRightIconClick={() => setShowPass(p => !p)}
             />
+
             <AuthInput
-              label="Confirm Password" name="confirm_password"
+              label="Confirm Password *"
+              name="confirm_password"
               type="password"
-              value={form.confirm_password} onChange={handleChange}
-              icon={FiLock} error={errors.confirm_password}
+              value={form.confirm_password}
+              onChange={handleChange}
+              icon={FiLock}
+              error={errors.confirm_password}
               placeholder="Type your password again"
               preventPaste={true}
             />
@@ -177,33 +249,57 @@ export default function TeacherRegister() {
               <PasswordStrength password={form.password} />
             )}
 
-            {/* Summary preview */}
+            {/* Summary before submitting */}
             <div style={{
-              background: 'var(--bg)', borderRadius: 'var(--radius-md)',
-              padding: '1rem', marginBottom: '0.5rem',
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '1rem',
+              marginBottom: '0.5rem',
               border: '1px solid var(--border)',
             }}>
               <p style={{
-                fontSize: '0.75rem', fontWeight: 700,
-                color: 'var(--text-muted)', marginBottom: '0.5rem',
-                letterSpacing: '0.06em',
+                fontSize: '0.72rem', fontWeight: 700,
+                color: 'var(--text-muted)', marginBottom: '0.6rem',
+                letterSpacing: '0.06em', textTransform: 'uppercase',
               }}>
-                ACCOUNT SUMMARY
+                Account Summary
               </p>
               {[
-                { l: 'Name', v: `${form.first_name} ${form.last_name}`.trim() || '—' },
-                { l: 'Email', v: form.email || '—' },
-                { l: 'Subject', v: form.subject || '—' },
+                { l: 'Name',          v: `${form.first_name} ${form.last_name}`.trim() || '—' },
+                { l: 'Email',         v: form.email || '—' },
+                { l: 'Course',        v: form.course || '—' },
                 { l: 'Qualification', v: form.qualification || '—' },
               ].map(({ l, v }) => (
                 <div key={l} style={{
                   display: 'flex', justifyContent: 'space-between',
                   padding: '0.3rem 0', fontSize: '0.8rem',
+                  borderBottom: '1px solid var(--border-light)',
                 }}>
                   <span style={{ color: 'var(--text-muted)' }}>{l}</span>
-                  <span style={{ color: 'var(--primary)', fontWeight: 600, maxWidth: '60%', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
+                  <span style={{
+                    color: 'var(--primary)', fontWeight: 600,
+                    maxWidth: '60%', textAlign: 'right',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {v}
+                  </span>
                 </div>
               ))}
+            </div>
+
+            {/* Pending approval notice */}
+            <div style={{
+              background: 'var(--warning-bg)',
+              border: '1px solid var(--warning)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1rem',
+              display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
+            }}>
+              <span style={{ flexShrink: 0, marginTop: '0.05rem' }}>⏳</span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                After registration, your account requires <strong>admin approval</strong> before
+                you can access teaching features.
+              </p>
             </div>
           </StepContainer>
         )}
@@ -220,8 +316,8 @@ export default function TeacherRegister() {
 
       <AuthLinks
         links={[
-          { label: 'Already have an account?', to: '/teacher/login', text: 'Sign in' },
-          { label: 'Are you a student?', to: '/student/register', text: 'Student Registration' },
+          { label: 'Already have an account?', to: '/teacher/login',  text: 'Sign in' },
+          { label: 'Are you a student?',        to: '/student/register', text: 'Student Registration' },
         ]}
       />
     </AuthLayout>
